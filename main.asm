@@ -36,7 +36,7 @@ NewL		macro
 
 Start:
 		; mov si, offset PasswordStr
-		; mov cx, 12
+		; mov cx, 102
 		; call GenerateHash
 
 
@@ -91,7 +91,7 @@ GrantedMsg	db 'ACCESS GRANTED$'
 DeniedMsg	db 'ACCESS DENIED$'
 InputBuffer	db inp_buffer_len dup(01h)	; input buffer (overflowable)
 PasswordHash	dw 0437h
-;PasswordStr	db 'pwd-govno123'
+;PasswordStr	db ''
 
 ;===============================================================================
 ; ClearScreen
