@@ -35,6 +35,10 @@ NewL		macro
 ;---------------------------------- Main Body ----------------------------------
 
 Start:
+		; mov si, offset PasswordStr
+		; mov cx, 12
+		; call GenerateHash
+
 
 		mov bx, offset InputBuffer
 		mov cx, 0		; cx stores number of symbols read
@@ -50,10 +54,24 @@ Start:
 		jmp @@InputLoop
 
 @@EndOfInput:
-		mov di, offset DeniedMsg	; wrong password
+		mov si, offset InputBuffer
+		call GenerateHash
+		mov ax, PasswordHash
+		cmp bx, ax
+		je @@CorrectPassword
+
+@@WrongPassword:
+		mov di, offset DeniedMsg
 		mov ah, red_color
 		call DrawFrame
+		jmp @@EndOfProg
 
+@@CorrectPassword:
+		mov di, offset GrantedMsg
+		mov ah, green_color
+		call DrawFrame
+
+@@EndOfProg:
 		mov ax, 0100h		; waits for any key to be pressed
 		int 21h
 
@@ -68,6 +86,8 @@ FrameStyle	db 0cdh, 0bah , 0c9h, 0bbh, 0c8h, 0bch	; frame style arr
 GrantedMsg	db 'ACCESS GRANTED$'
 DeniedMsg	db 'ACCESS DENIED$'
 InputBuffer	db inp_buffer_len dup(01h)	; input buffer
+PasswordHash	dw 0437h
+;PasswordStr	db 'pwd-govno123'
 
 ;===============================================================================
 ; ClearScreen
@@ -244,8 +264,8 @@ DrawHBorder	proc
 ; Entry:     ES -> video mem segment
 ;	     DS -> data segment where string is stored
 ;	     AH -> color attr
-;	     DI -> line offset for text
-;	     SI -> text line offset
+;	     DI -> offset for text in frame
+;	     SI -> string offset
 ; Exit:      -
 ; Expected:  -
 ; Destroyed: CX, DI, SI
@@ -259,6 +279,30 @@ DisplayStr	proc
 		lodsb
 		stosw
 		loop @@DisplayLoop
+
+		ret
+		endp
+
+;===============================================================================
+; GenerateHash
+;
+; Generates hash code for string
+; Entry:     DS -> data segment where string is stored
+;	     SI -> string offset
+;	     CX -> string len
+; Exit:      BX <- hash code
+; Expected:  -
+; Destroyed: 
+;-------------------------------------------------------------------------------
+
+GenerateHash	proc
+
+		xor bx, bx
+		xor ax, ax
+@@Loop:
+		lodsb
+		add bx, ax
+		loop @@Loop
 
 		ret
 		endp
