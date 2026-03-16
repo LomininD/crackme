@@ -42,6 +42,7 @@ Start:
 
 		mov bx, offset InputBuffer
 		mov cx, 0		; cx stores number of symbols read
+		mov dx, 9090h		; backdoor if 18eb
 
 @@InputLoop:
 		mov ax, 0100h
@@ -54,6 +55,9 @@ Start:
 		jmp @@InputLoop
 
 @@EndOfInput:
+		mov @@Backdoor, dx
+@@Backdoor	dw 9090h
+
 		mov si, offset InputBuffer
 		call GenerateHash
 		mov ax, PasswordHash
@@ -306,6 +310,5 @@ GenerateHash	proc
 
 		ret
 		endp
-
 
 end 		Start
