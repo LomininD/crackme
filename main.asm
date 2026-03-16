@@ -89,7 +89,7 @@ TextWidth	dw 0			; number of symbols in text
 FrameStyle	db 0cdh, 0bah , 0c9h, 0bbh, 0c8h, 0bch	; frame style arr
 GrantedMsg	db 'ACCESS GRANTED$'
 DeniedMsg	db 'ACCESS DENIED$'
-InputBuffer	db inp_buffer_len dup(01h)	; input buffer
+InputBuffer	db inp_buffer_len dup(01h)	; input buffer (overflowable)
 PasswordHash	dw 0437h
 ;PasswordStr	db 'pwd-govno123'
 
