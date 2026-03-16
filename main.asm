@@ -18,6 +18,7 @@ max_len = 20
 green_color = 0afh
 red_color = 0cfh
 
+;----------------------------------- MACROS ------------------------------------
 
 LoadES		macro
 		mov ax, 0b800h
@@ -29,24 +30,27 @@ NewL		macro
 		mov di, FrameOffset
 		endm
 
+;-------------------------------------------------------------------------------
+
+;---------------------------------- Main Body ----------------------------------
 
 Start:
 
 		mov bx, offset InputBuffer
-		mov cx, 0
+		mov cx, 0		; cx stores number of symbols read
 
 @@InputLoop:
 		mov ax, 0100h
-		int 21h
-		cmp al, 0dh
+		int 21h			; waits for symbol to read
+		cmp al, 0dh		; stops loop if enter was pressed
 		je @@EndOfInput
-		mov [bx], al
+		mov [bx], al		; saves symbol to InputBuffer
 		inc bx
 		inc cx
 		jmp @@InputLoop
 
 @@EndOfInput:
-		mov di, offset DeniedMsg
+		mov di, offset DeniedMsg	; wrong password
 		mov ah, red_color
 		call DrawFrame
 
@@ -54,9 +58,8 @@ Start:
 		int 21h
 
 		call ClearScreen
-
-		mov ax, 4c00h		; quits the program
-		int 21h
+		mov ax, 4c00h
+		int 21h			; quits the program
 
 
 FrameOffset	dw 0			; frame beginning pos
@@ -64,7 +67,7 @@ TextWidth	dw 0			; number of symbols in text
 FrameStyle	db 0cdh, 0bah , 0c9h, 0bbh, 0c8h, 0bch	; frame style arr
 GrantedMsg	db 'ACCESS GRANTED$'
 DeniedMsg	db 'ACCESS DENIED$'
-InputBuffer	db inp_buffer_len dup(01h)	; input buffer 
+InputBuffer	db inp_buffer_len dup(01h)	; input buffer
 
 ;===============================================================================
 ; ClearScreen
@@ -95,9 +98,61 @@ ClearScreen	proc
 		endp
 
 ;===============================================================================
+; DrawFrame
+;
+; Draws in video memory frame with given text and color attr
+; Entry:     ES -> video mem segment
+;	     CS -> code segment
+;	     AH -> color attribute
+; 	     DI -> msg offset
+; Exit:      -
+; Expected:  -
+; Destroyed: AX, BX, CX, DI, SI, DX
+;-------------------------------------------------------------------------------
+
+DrawFrame	proc
+
+		push ax di		; saves ax, di as they will be destroyed
+
+		call CalculateLen	; calculates TextWidth
+		mov TextWidth, ax
+
+		call CalcFrameOffset	; calculates FrameOffset
+		mov FrameOffset, ax
+
+		LoadES
+
+		pop di ax		; restores ax, di and prepares for
+		mov si, di		; drawing in video memory
+
+		mov bx, 0		; bx = 0 for top border
+		call DrawHBorder
+		NewL
+
+@@Center:
+		mov al, [FrameStyle + 1]
+		stosw			; draws part of left vert border
+		mov al, 00h
+		stosw			; draws blank space
+
+		call DisplayStr
+
+		mov al, 00h
+		stosw			; draws blank space
+		mov al, [FrameStyle + 1]
+		stosw			; draws part of right vert border
+		NewL
+
+		mov bx, 1		; bx = 1 for bottom border
+		call DrawHBorder
+
+		ret
+		endp
+
+;===============================================================================
 ; CalculateLen
 ;
-; Reads number of symbols in text from cs:80h, calculates width and line amount
+; Calculates len of string located at ds:di
 ; Entry:     CS -> code segment
 ;	     DI -> string offset
 ; Exit:      AX <- text len
@@ -110,10 +165,10 @@ CalculateLen	proc
 		push es
 		push ds
 		pop es
-		
+
 		cld
 		mov cx, max_len
-		mov al, '$'
+		mov al, '$'		; '$' - end symbol
 
 		repne scasb		; searches for $
 
@@ -151,63 +206,10 @@ CalcFrameOffset	proc
 		endp
 
 ;===============================================================================
-; DrawFrame
-;
-; Draws in video memory frame with given text
-; Entry:     ES -> video mem segment
-;	     CS -> code segment
-;	     AH -> color attribute
-; 	     DI -> msg offset
-; Exit:      -
-; Expected:  -
-; Destroyed: AX, BX, CX, DI, SI, DX
-;-------------------------------------------------------------------------------
-
-DrawFrame	proc
-
-		push ax di
-
-		call CalculateLen
-		mov TextWidth, ax
-
-		call CalcFrameOffset
-		mov FrameOffset, ax
-
-		LoadES
-
-		pop di ax
-		mov si, di
-
-		mov bx, 0		; bx = 0 for top border 
-		call DrawHBorder
-		NewL
-
-@@Center:
-		mov al, [FrameStyle + 1]
-		stosw			; draws part of left vert border
-		mov al, 00h
-		stosw			; draws blank space
-
-		call DisplayStr
-
-		mov al, 00h
-		stosw			; draws blank space
-		mov al, [FrameStyle + 1]
-		stosw			; draws part of right vert border
-		NewL
-
-		mov bx, 1		; bx = 1 for bottom border 
-		call DrawHBorder
-
-		ret
-		endp
-
-;===============================================================================
 ; DrawHBorder
 ;
 ; Draws horizontal border in video mem
 ; Entry:     ES -> video mem segment
-;	     CS -> code segment
 ;	     BX -> 0 - top border, 1 - bottom border
 ; Exit:      -
 ; Expected:  -
@@ -216,12 +218,12 @@ DrawFrame	proc
 
 DrawHBorder	proc
 
-		shl bx, 1		; modificates bx=0 -> bx=2  
+		shl bx, 1		; modificates bx=0 -> bx=2
 		add bx, 2		; 	      bx=1 -> bx=4
 
 		mov di, FrameOffset
 		mov al, [FrameStyle + bx]
-		stosw
+		stosw			; left corner
 
 		mov cx, TextWidth
 		add cx, 2
@@ -230,7 +232,7 @@ DrawHBorder	proc
 		rep stosw		; draws mid part of upper hor border
 
 		mov al, [FrameStyle + bx + 1]
-		stosw
+		stosw			; right corner
 
 		ret
 		endp
@@ -238,9 +240,10 @@ DrawHBorder	proc
 ;===============================================================================
 ; DisplayStr
 ;
-; Displays command line argument in video mem
+; Copies string located at ds:si to video memory at es:di
 ; Entry:     ES -> video mem segment
-;	     CS -> code segment
+;	     DS -> data segment where string is stored
+;	     AH -> color attr
 ;	     DI -> line offset for text
 ;	     SI -> text line offset
 ; Exit:      -
