@@ -13,6 +13,7 @@ org 100h
 
 locals @@
 
+inp_buffer_len = 100
 max_len = 20
 green_color = 0afh
 red_color = 0cfh
@@ -31,7 +32,20 @@ NewL		macro
 
 Start:
 
+		mov bx, offset InputBuffer
+		mov cx, 0
 
+@@InputLoop:
+		mov ax, 0100h
+		int 21h
+		cmp al, 0dh
+		je @@EndOfInput
+		mov [bx], al
+		inc bx
+		inc cx
+		jmp @@InputLoop
+
+@@EndOfInput:
 		mov di, offset DeniedMsg
 		mov ah, red_color
 		call DrawFrame
@@ -50,6 +64,7 @@ TextWidth	dw 0			; number of symbols in text
 FrameStyle	db 0cdh, 0bah , 0c9h, 0bbh, 0c8h, 0bch	; frame style arr
 GrantedMsg	db 'ACCESS GRANTED$'
 DeniedMsg	db 'ACCESS DENIED$'
+InputBuffer	db inp_buffer_len dup(01h)	; input buffer 
 
 ;===============================================================================
 ; ClearScreen
