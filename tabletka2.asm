@@ -33,8 +33,8 @@ Start:
 		sti
 
 		;add sp, 8
-		mov ah, 01h
-		int 21h
+		; mov ah, 01h
+		; int 21h
 
 
 		mov ax, 3100h
