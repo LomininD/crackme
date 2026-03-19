@@ -12,6 +12,7 @@ locals @@
 
 stack_pos = 0fffah
 jmp_offset = 017Dh
+buffer_start = 599h
 
 Start:
 
@@ -59,23 +60,22 @@ NewHandler	proc
 
 		cli
 
-		cmp ah, 01h
+		cmp ah, 01h			; if not 01h was called - skip
 		jne @@Skip
 
 		push di es
+		mov di, buffer_start
 
-		mov di, 599h
-
-@@FillLoop:
-		cmp di, stack_pos
+@@FillLoop:					; overflows byte by byte 
+		cmp di, stack_pos		; input buffer
 		je @@EndLoop
-		mov al, byte ptr ss:[di]
+		mov al, byte ptr ss:[di]	; does not change symbol
 		mov byte ptr ss:[di], al
 		add di, 1
 		jmp @@FillLoop
 
 @@EndLoop:
-		mov ss:[di], word ptr jmp_offset
+		mov ss:[di], word ptr jmp_offset	; replaces ret address
 
 		mov al, 20h		; end of interrupt
 		out 20h, al
