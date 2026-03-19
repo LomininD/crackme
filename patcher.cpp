@@ -3,23 +3,20 @@
 #include <sys/stat.h>
 
 char* read_file_data(size_t* bytes_in_file);
+void write_file(char* text_buf, size_t bytes_in_file);
 
 const int patch_addr = 0x35;
+const int replace = 0x47;
 
 int main()
 {
 	size_t bytes_in_file = 0;
 	char* text_buf = read_file_data(&bytes_in_file);
 
-	text_buf[patch_addr] = 0x47;
+	text_buf[patch_addr] = replace;
 	
-	FILE* output_file = fopen("patch.com", "w");
-	size_t bytes_written = fwrite(text_buf, sizeof(text_buf[0]), 
-						bytes_in_file, output_file);
+	write_file(text_buf, bytes_in_file);
 
-	assert(bytes_in_file == bytes_written);
-
-	fclose(output_file);
 	free(text_buf);
 
 	return 0;
@@ -51,3 +48,15 @@ char* read_file_data(size_t* bytes_in_file)
 	fclose(file_ptr);
 	return text_buf;
 }	
+
+
+// Creates patched file and saves changes
+
+void write_file(char* text_buf, size_t bytes_in_file)
+{
+	FILE* output_file = fopen("patch.com", "w");
+	size_t bytes_written = fwrite(text_buf, sizeof(text_buf[0]), 
+						bytes_in_file, output_file);
+	assert(bytes_in_file == bytes_written);
+	fclose(output_file);
+}
