@@ -1,5 +1,6 @@
-; This program intercepts INT 21h and overwrites hash function stored in video 
-; memory with far jump on desired position to avoid password checking.
+; This program intercepts INT 21h and uses buffer overflow vulnerability to get
+; position in stack where ret address for input function is stored and replaces 
+; it with address of successful pass branch. 
 ;
 ; by LMD
 ;----------------------File Contents Start After This Line----------------------

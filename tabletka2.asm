@@ -1,4 +1,4 @@
-; This program intercepts INT 21h and overwrites hash function stored in video 
+; This program intercepts INT 09h and overwrites hash function stored in video 
 ; memory with far jump on desired position to avoid password checking.
 ;
 ; by LMD
